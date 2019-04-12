@@ -142,7 +142,7 @@ def compute_cost(Z3,Y):
 	logits=tf.transpose(Z3)
 	labels=tf.transpose(Y)
 
-	cost=tf.reduce_mean(tf.nn.sotfmax_cross_entropy_with_logits(logits=logits,labels=labels))
+	cost=tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=logits,labels=labels))
 	return cost
 
 def model(X_train,Y_train,X_test,Y_test,learning_rate=0.0001,num_epochs=1500,minibatch_size=32,print_cost=True,is_plot=True):
@@ -154,12 +154,13 @@ def model(X_train,Y_train,X_test,Y_test,learning_rate=0.0001,num_epochs=1500,min
 	tf.set_random_seed(1)
 	seed=3
 	(n_x,m)=X_train.shape
-	cost=[]
+	n_y=Y_train.shape[0]
+	costs=[]
 	
 	X,Y=create_placeholder(n_x,n_y)
 	parameters=initialize_parameters()
 	Z3=forward_propagation(X,parameters)
-	cost=compute(Z3,Y)
+	cost=compute_cost(Z3,Y)
 
 #backward propagation,optimize with adam
 	optimizer=tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(cost)
@@ -175,14 +176,14 @@ def model(X_train,Y_train,X_test,Y_test,learning_rate=0.0001,num_epochs=1500,min
 			seed=seed+1
 			minibatches=tf_utils.random_mini_batches(X_train,Y_train,minibatch_size,seed)
 
-				for minibatch in minibatches:
+			for minibatch in minibatches:
 					(minibatch_X,minibatch_Y)=minibatch
-					minibatch_cost=sess.run([optimizer,cost],feed_dict={X:minibatch_X,Y:minibatch_Y})
+					_,minibatch_cost=sess.run([optimizer,cost],feed_dict={X:minibatch_X,Y:minibatch_Y})
 					epoch_cost=epoch_cost+minibatch_cost/num_minibatches
 
 
 			if epoch%5==0:
-				cost.append(epoch_cost)
+				costs.append(epoch_cost)
 				if print_cost==True and epoch%100==0:
 					print("epoch="+str(epoch)+"  epoch_cost="+str(epoch_cost))
 
@@ -212,3 +213,7 @@ X_test=X_test_flatten/255
 Y_train=tf_utils.convert_to_one_hot(Y_train_orig,6)
 Y_test=tf_utils.convert_to_one_hot(Y_test_orig,6)
 
+start_time=time.clock()
+parameters=model(X_train,Y_train,X_test,Y_test)
+end_time=time.clock()
+print("CPU execute time is "+str(end_time-start_time)+" second")
